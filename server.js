@@ -1,4 +1,5 @@
-require("dotenv").config();
+// Railway 通过 Dashboard 设置环境变量，本地开发用 .env
+try { require("dotenv").config(); } catch (e) {}
 
 const express = require("express");
 const cors = require("cors");
@@ -7,6 +8,10 @@ const store = require("./store");
 const ai = require("./ai");
 
 const app = express();
+
+// 健康检查（放最前面，确保 Railway 能检测到）
+app.get("/health", (req, res) => res.json({ ok: true, uptime: process.uptime() }));
+
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.static("public"));
@@ -339,7 +344,10 @@ app.post("/api/wordcloud", async (req, res) => {
 });
 
 // ==================== 启动 ====================
+process.on("uncaughtException", (err) => console.error("UNCAUGHT:", err));
+process.on("unhandledRejection", (err) => console.error("UNHANDLED:", err));
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`\n🐛 书虫已启动 → http://localhost:${PORT}\n`);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`\n🐛 书虫已启动 → port ${PORT}\n`);
 });
