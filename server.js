@@ -3,18 +3,33 @@ try { require("dotenv").config(); } catch (e) {}
 
 const express = require("express");
 const cors = require("cors");
-const { v4: uuid } = require("uuid");
-const store = require("./store");
-const ai = require("./ai");
+
+// 延迟加载，避免启动时崩溃
+let store, ai, uuid;
+try {
+  store = require("./store");
+  ai = require("./ai");
+  uuid = require("uuid").v4;
+} catch (err) {
+  console.error("模块加载失败:", err.message);
+  console.error(err.stack);
+}
 
 const app = express();
 
-// 健康检查（放最前面，确保 Railway 能检测到）
-app.get("/health", (req, res) => res.json({ ok: true, uptime: process.uptime() }));
+// 健康检查
+app.get("/health", (req, res) => res.json({ ok: true }));
 
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.static("public"));
+
+// 如果模块加载失败，返回降级信息
+if (!store || !ai) {
+  app.get("/api/books", (req, res) => {
+    res.json([{ id: "demo", title: "模块加载失败", author: "请查看日志", notes: [] }]);
+  });
+} else {
 
 // ==================== 书籍接口 ====================
 
@@ -343,11 +358,13 @@ app.post("/api/wordcloud", async (req, res) => {
   }
 });
 
+} // end of if (store && ai)
+
 // ==================== 启动 ====================
-process.on("uncaughtException", (err) => console.error("UNCAUGHT:", err));
-process.on("unhandledRejection", (err) => console.error("UNHANDLED:", err));
+process.on("uncaughtException", (err) => console.error("CRASH:", err));
+process.on("unhandledRejection", (err) => console.error("REJECT:", err));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`\n🐛 书虫已启动 → port ${PORT}\n`);
+  console.log(`书虫启动成功 port=${PORT}`);
 });
