@@ -100,7 +100,8 @@ function seedDemoData() {
   const books = readJSON("books.json");
   if (books.length > 0) return; // 已有数据就跳过
 
-  const { v4: uuid } = require("uuid");
+  // 纯 JS 的简单 ID 生成（不依赖 uuid 包）
+  const genId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
 
   const demoBooks = [
     {

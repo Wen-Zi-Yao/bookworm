@@ -5,15 +5,17 @@ const express = require("express");
 const cors = require("cors");
 
 // 延迟加载，避免启动时崩溃
-let store, ai, uuid;
+let store, ai;
 try {
   store = require("./store");
   ai = require("./ai");
-  uuid = require("uuid").v4;
 } catch (err) {
   console.error("模块加载失败:", err.message);
   console.error(err.stack);
 }
+
+// 简易 ID 生成（不需要 uuid 包）
+const genId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
 
 const app = express();
 
@@ -61,7 +63,7 @@ app.post("/api/books", (req, res) => {
     if (!title || !title.trim()) {
       return res.status(400).json({ error: "书名不能为空" });
     }
-    const book = store.addBook({ id: uuid(), title: title.trim(), author });
+    const book = store.addBook({ id: genId(), title: title.trim(), author });
     res.json(book);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -105,7 +107,7 @@ app.post("/api/books/:id/notes", async (req, res) => {
 
     // 保存笔记和分析结果
     const note = store.addNote(req.params.id, {
-      id: uuid(),
+      id: genId(),
       chapter: chapter || "",
       content: content.trim(),
       analysis,
