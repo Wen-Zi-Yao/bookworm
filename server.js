@@ -4,15 +4,12 @@ try { require("dotenv").config(); } catch (e) {}
 const express = require("express");
 const cors = require("cors");
 
-// 延迟加载，避免启动时崩溃
+// 分步加载，精确定位哪个模块挂了
 let store, ai;
-try {
-  store = require("./store");
-  ai = require("./ai");
-} catch (err) {
-  console.error("模块加载失败:", err.message);
-  console.error(err.stack);
-}
+try { store = require("./store"); console.log("store.js OK"); }
+catch (e) { console.error("store.js FAIL:", e.message, e.stack); }
+try { ai = require("./ai"); console.log("ai.js OK"); }
+catch (e) { console.error("ai.js FAIL:", e.message, e.stack); }
 
 // 简易 ID 生成（不需要 uuid 包）
 const genId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
@@ -26,7 +23,17 @@ app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.static("static"));
 
-// 如果模块加载失败，返回降级信息
+// 如果模块加载失败，返回具体错误
+app.get("/api/debug", (req, res) => {
+  res.json({
+    store: !!store,
+    ai: !!ai,
+    node: process.version,
+    cwd: process.cwd(),
+    files: require("fs").readdirSync("."),
+  });
+});
+
 if (!store || !ai) {
   app.get("/api/books", (req, res) => {
     res.json([{ id: "demo", title: "模块加载失败", author: "请查看日志", notes: [] }]);
