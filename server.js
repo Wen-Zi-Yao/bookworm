@@ -24,7 +24,7 @@ app.get("/health", (req, res) => res.json({ ok: true }));
 
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
-app.use(express.static("public"));
+app.use(express.static("static"));
 
 // 如果模块加载失败，返回降级信息
 if (!store || !ai) {
